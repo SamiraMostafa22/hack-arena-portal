@@ -235,6 +235,67 @@ function PointsBadge({ isHint, points }) {
   );
 }
 
+function PenaltyInfoBox({ penalty }) {
+  return (
+    <div className="mt-6 rounded-3xl border border-[#ff4b00]/35 bg-black/75 p-5 shadow-[0_0_28px_rgba(255,75,0,0.12)]">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <p className="cyber-title text-xs uppercase tracking-[0.22em] text-[#ff4b00]">
+            Penalty Calculation
+          </p>
+
+          <h3 className="mt-1 text-2xl font-black text-white">
+            How your penalty is calculated
+          </h3>
+        </div>
+
+        <div className="rounded-2xl border border-[#ff4b00]/45 bg-[#ff4b00]/10 px-5 py-3 text-center">
+          <p className="text-[10px] font-black uppercase tracking-[0.18em] text-orange-200">
+            Your Penalty
+          </p>
+
+          <p className="mt-1 font-mono text-3xl font-black text-[#ff4b00]">
+            {penalty}
+          </p>
+        </div>
+      </div>
+
+      <div
+        dir="rtl"
+        className="mt-5 rounded-2xl border border-[#ff4b00]/25 bg-black/60 p-4 text-right"
+      >
+        <p className="text-base font-bold leading-8 text-orange-100">
+          يتم حساب الـ Penalty عن طريق جمع وقت حل كل Flag صحيحة بالدقائق من
+          بداية الراوند الخاص بها.
+        </p>
+
+        <div className="mt-4 rounded-xl border border-orange-500/25 bg-[#ff4b00]/10 p-4">
+          <p className="text-sm font-bold leading-8 text-orange-50">
+            مثال: إذا تم حل Flag بعد 10 دقائق، وFlag بعد 25 دقيقة، وFlag بعد 40
+            دقيقة، فإن:
+          </p>
+
+          <p
+            dir="ltr"
+            className="mt-2 text-left font-mono text-lg font-black text-[#ff4b00]"
+          >
+            Penalty = 10 + 25 + 40 = 75
+          </p>
+        </div>
+
+        <p className="mt-4 text-sm font-bold leading-7 text-gray-300">
+          كلما كان الـ Penalty أقل كان ذلك أفضل عند تساوي الفرق في الـ Score
+          وعدد الأسئلة المحلولة.
+        </p>
+
+        <p className="mt-2 text-xs font-bold leading-6 text-gray-400">
+          الـ Hints والـ First Blood لا يدخلان في حساب الـ Penalty.
+        </p>
+      </div>
+    </div>
+  );
+}
+
 function getRoundStatus(round) {
   if (round.roundCompleted) {
     return {
@@ -428,23 +489,18 @@ export default function TeamDashboard() {
             </div>
           )}
 
-          <div className="grid gap-4 md:grid-cols-3 xl:grid-cols-7">
+          <div className="grid gap-4 md:grid-cols-6">
             {[
               ["Score", stats?.score || 0],
               ["Rank", `#${stats?.rank || "-"}`],
               ["Solved", stats?.solved || 0],
-              ["Penalty Min", formatPenalty(teamPenaltyMs)],
               ["Hints", stats?.hints || 0],
               ["First Blood", `🩸 ${stats?.firstBlood || 0}`],
             ].map(([label, value]) => (
               <div key={label} className="cyber-card rounded-3xl p-6">
                 <p className="text-gray-400">{label}</p>
 
-                <h2
-                  className={`mt-2 font-black text-[#ff4b00] ${
-                    label === "Penalty Min" ? "font-mono text-4xl" : "text-4xl"
-                  }`}
-                >
+                <h2 className="mt-2 text-4xl font-black text-[#ff4b00]">
                   {value}
                 </h2>
               </div>
@@ -466,6 +522,8 @@ export default function TeamDashboard() {
               )}
             </div>
           </div>
+
+          <PenaltyInfoBox penalty={formatPenalty(teamPenaltyMs)} />
 
           <div className="mt-6 grid gap-6 lg:grid-cols-3">
             <div className="cyber-card rounded-3xl p-6 lg:col-span-2">
