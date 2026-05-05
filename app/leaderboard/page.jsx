@@ -40,18 +40,12 @@ function formatDuration(ms) {
   )}:${String(seconds).padStart(2, "0")}`;
 }
 
-function formatLastSubmit(value) {
-  if (!value) return "--";
+function formatPenalty(ms) {
+  const value = Number(ms || 0);
 
-  const time = getTimeMs(value);
+  if (!Number.isFinite(value) || value <= 0) return "00:00:00";
 
-  if (Number.isNaN(time)) return "--";
-
-  return new Date(time).toLocaleTimeString([], {
-    hour: "2-digit",
-    minute: "2-digit",
-    second: "2-digit",
-  });
+  return formatDuration(value);
 }
 
 function calculateTimer(startTime, endTime, nowMs) {
@@ -374,6 +368,7 @@ export default function GlobalLeaderboardPage() {
                     <th className="px-4 py-3">Team</th>
                     <th className="px-4 py-3">Score</th>
                     <th className="px-4 py-3">Solved</th>
+                    <th className="px-4 py-3">Penalty</th>
                     <th className="px-4 py-3">First Blood</th>
 
                     {roundNumbers.map((roundNumber) => (
@@ -381,8 +376,6 @@ export default function GlobalLeaderboardPage() {
                         R{roundNumber}
                       </th>
                     ))}
-
-                    <th className="px-4 py-3">Last Submit</th>
                   </tr>
                 </thead>
 
@@ -427,6 +420,12 @@ export default function GlobalLeaderboardPage() {
 
                         <td className="px-4 py-2.5 text-2xl font-black text-white">
                           {getTeamSolved(team)}
+                        </td>
+
+                        <td className="px-4 py-2.5">
+                          <span className="inline-flex rounded-xl border border-cyan-400/40 bg-cyan-950/30 px-3 py-1.5 font-mono text-lg font-black text-cyan-200 shadow-[0_0_14px_rgba(34,211,238,0.18)]">
+                            {formatPenalty(team.totalSolveTimeMs)}
+                          </span>
                         </td>
 
                         <td className="px-4 py-2.5">
@@ -486,10 +485,6 @@ export default function GlobalLeaderboardPage() {
                             </td>
                           );
                         })}
-
-                        <td className="px-4 py-2.5 text-base text-gray-300">
-                          {formatLastSubmit(team.lastSubmit)}
-                        </td>
                       </tr>
                     );
                   })}
@@ -516,6 +511,10 @@ export default function GlobalLeaderboardPage() {
 
             <div className="rounded-full border border-[#ff4b00]/40 bg-black px-3 py-1.5 text-orange-200">
               Score = normal solves only
+            </div>
+
+            <div className="rounded-full border border-cyan-500/60 bg-cyan-950 px-3 py-1.5 text-cyan-200">
+              Penalty = total solve time
             </div>
 
             <div className="rounded-full border border-yellow-500/60 bg-yellow-950 px-3 py-1.5 text-yellow-200">
