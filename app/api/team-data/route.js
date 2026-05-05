@@ -291,6 +291,7 @@ export async function GET() {
     let submissions = [];
     let hints = [];
     let progress = [];
+    let firstBloods = [];
 
     const { data: solvesData, error: solvesError } = await supabaseAdmin
       .from("solves")
@@ -306,6 +307,18 @@ export async function GET() {
     }
 
     solves = solvesData || [];
+
+    // Load First Blood only for UI display.
+    // It does NOT affect ranking.
+    const { data: firstBloodsData, error: firstBloodsError } =
+      await supabaseAdmin
+        .from("first_bloods")
+        .select("*")
+        .in("round_id", roundIds);
+
+    if (!firstBloodsError) {
+      firstBloods = firstBloodsData || [];
+    }
 
     if (flagIds.length > 0) {
       const { data: submissionsData, error: submissionsError } =
@@ -401,7 +414,8 @@ export async function GET() {
         completed: 0,
         hints: 0,
 
-        // موجود للتوافق مع الواجهة فقط، لكنه لا يؤثر في الرانك.
+        // First Blood appears in UI only.
+        // It does NOT affect ranking.
         firstBloods: 0,
 
         lastSubmit: null,
@@ -524,7 +538,11 @@ export async function GET() {
       }
     }
 
-    function addCompleted({ teamId: completedTeamId, flagId, completedAt }) {
+    function addCompleted({
+      teamId: completedTeamId,
+      flagId,
+      completedAt,
+    }) {
       const team = getTeamStat(completedTeamId);
       const flag = flagById.get(flagId);
 
@@ -660,6 +678,22 @@ export async function GET() {
           flagId: submission.flag_id,
           completedAt: submitTime,
         });
+      }
+    }
+
+    // Count First Blood for UI display only.
+    // Do NOT use it in leaderboard sorting.
+    if (firstBloods.length > 0) {
+      const countedFirstBloods = new Set();
+
+      for (const blood of firstBloods) {
+        const team = getTeamStat(blood.team_id);
+        const key = `${blood.team_id}-${blood.flag_id || blood.id}`;
+
+        if (!team || countedFirstBloods.has(key)) continue;
+
+        countedFirstBloods.add(key);
+        team.firstBloods += 1;
       }
     }
 
