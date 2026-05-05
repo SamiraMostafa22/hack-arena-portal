@@ -43,9 +43,9 @@ function formatDuration(ms) {
 function formatPenalty(ms) {
   const value = Number(ms || 0);
 
-  if (!Number.isFinite(value) || value <= 0) return "00:00:00";
+  if (!Number.isFinite(value) || value <= 0) return 0;
 
-  return formatDuration(value);
+  return Math.ceil(value / 1000 / 60);
 }
 
 function calculateTimer(startTime, endTime, nowMs) {
@@ -368,7 +368,7 @@ export default function GlobalLeaderboardPage() {
                     <th className="px-4 py-3">Team</th>
                     <th className="px-4 py-3">Score</th>
                     <th className="px-4 py-3">Solved</th>
-                    <th className="px-4 py-3">Penalty</th>
+                    <th className="px-4 py-3">Penalty Min</th>
                     <th className="px-4 py-3">First Blood</th>
 
                     {roundNumbers.map((roundNumber) => (
@@ -422,10 +422,8 @@ export default function GlobalLeaderboardPage() {
                           {getTeamSolved(team)}
                         </td>
 
-                        <td className="px-4 py-2.5">
-                          <span className="inline-flex rounded-xl border border-cyan-400/40 bg-cyan-950/30 px-3 py-1.5 font-mono text-lg font-black text-cyan-200 shadow-[0_0_14px_rgba(34,211,238,0.18)]">
-                            {formatPenalty(team.totalSolveTimeMs)}
-                          </span>
+                        <td className="px-4 py-2.5 text-2xl font-black text-[#ff4b00]">
+                          {formatPenalty(team.totalSolveTimeMs)}
                         </td>
 
                         <td className="px-4 py-2.5">
@@ -513,8 +511,8 @@ export default function GlobalLeaderboardPage() {
               Score = normal solves only
             </div>
 
-            <div className="rounded-full border border-cyan-500/60 bg-cyan-950 px-3 py-1.5 text-cyan-200">
-              Penalty = total solve time
+            <div className="rounded-full border border-[#ff4b00]/50 bg-[#ff4b00]/10 px-3 py-1.5 text-orange-200">
+              Penalty = total solve time in minutes
             </div>
 
             <div className="rounded-full border border-yellow-500/60 bg-yellow-950 px-3 py-1.5 text-yellow-200">

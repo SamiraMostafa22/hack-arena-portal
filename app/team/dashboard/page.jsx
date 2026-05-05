@@ -21,25 +21,12 @@ function getTimeMs(value) {
   return new Date(normalized).getTime();
 }
 
-function formatDuration(ms) {
-  const totalSeconds = Math.max(0, Math.ceil(Number(ms || 0) / 1000));
-
-  const hours = Math.floor(totalSeconds / 3600);
-  const minutes = Math.floor((totalSeconds % 3600) / 60);
-  const seconds = totalSeconds % 60;
-
-  return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(
-    2,
-    "0"
-  )}:${String(seconds).padStart(2, "0")}`;
-}
-
 function formatPenalty(ms) {
   const value = Number(ms || 0);
 
-  if (!Number.isFinite(value) || value <= 0) return "00:00:00";
+  if (!Number.isFinite(value) || value <= 0) return 0;
 
-  return formatDuration(value);
+  return Math.ceil(value / 1000 / 60);
 }
 
 function CountdownOverlay({ timer }) {
@@ -446,7 +433,7 @@ export default function TeamDashboard() {
               ["Score", stats?.score || 0],
               ["Rank", `#${stats?.rank || "-"}`],
               ["Solved", stats?.solved || 0],
-              ["Penalty", formatPenalty(teamPenaltyMs)],
+              ["Penalty Min", formatPenalty(teamPenaltyMs)],
               ["Hints", stats?.hints || 0],
               ["First Blood", `🩸 ${stats?.firstBlood || 0}`],
             ].map(([label, value]) => (
@@ -455,7 +442,7 @@ export default function TeamDashboard() {
 
                 <h2
                   className={`mt-2 font-black text-[#ff4b00] ${
-                    label === "Penalty" ? "font-mono text-3xl" : "text-4xl"
+                    label === "Penalty Min" ? "font-mono text-4xl" : "text-4xl"
                   }`}
                 >
                   {value}
