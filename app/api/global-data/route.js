@@ -44,13 +44,6 @@ function isAfter(a, b) {
   return new Date(a).getTime() > new Date(b).getTime();
 }
 
-function isBefore(a, b) {
-  if (!a) return false;
-  if (!b) return true;
-
-  return new Date(a).getTime() < new Date(b).getTime();
-}
-
 function getTeamName(team) {
   return (
     team.team_name ||
@@ -148,7 +141,6 @@ export async function GET() {
     let submissions = [];
     let teamHints = [];
     let progress = [];
-    let firstBloods = [];
 
     if (roundIds.length > 0) {
       const { data: solvesData, error: solvesError } = await supabaseAdmin
@@ -165,16 +157,6 @@ export async function GET() {
       }
 
       solves = solvesData || [];
-
-      const { data: firstBloodsData, error: firstBloodsError } =
-        await supabaseAdmin
-          .from("first_bloods")
-          .select("*")
-          .in("round_id", roundIds);
-
-      if (!firstBloodsError) {
-        firstBloods = firstBloodsData || [];
-      }
     }
 
     if (flagIds.length > 0) {
@@ -263,10 +245,17 @@ export async function GET() {
 
         completed: 0,
         hints: 0,
+
+        // Kept for UI compatibility only.
+        // It does NOT affect ranking anymore.
         firstBloods: 0,
 
         lastSubmit: null,
         lastScoreTime: null,
+
+        // Ranking time:
+        // Sum of every solved question time from its round start.
+        totalSolveTimeMs: 0,
 
         rounds: {
           1: 0,
@@ -304,6 +293,14 @@ export async function GET() {
       const roundNumber = Number(round.round_number);
       const awardedPoints = Number(points || flag.points || 0);
       const solveTime = toTime(solvedAt);
+      const roundStartTime = toTime(round.start_time);
+
+      if (solveTime && roundStartTime) {
+        const solveMs = new Date(solveTime).getTime();
+        const roundStartMs = new Date(roundStartTime).getTime();
+
+        team.totalSolveTimeMs += Math.max(0, solveMs - roundStartMs);
+      }
 
       team.score += awardedPoints;
       team.totalScore += awardedPoints;
@@ -480,65 +477,28 @@ export async function GET() {
       }
     }
 
-    if (firstBloods.length > 0) {
-      const countedFirstBloods = new Set();
-
-      for (const blood of firstBloods) {
-        const team = teamStats.get(blood.team_id);
-        const key = `${blood.team_id}-${blood.flag_id || blood.id}`;
-
-        if (!team || countedFirstBloods.has(key)) continue;
-
-        countedFirstBloods.add(key);
-        team.firstBloods += 1;
-      }
-    } else {
-      const firstSolveByFlag = new Map();
-
-      for (const solve of solves || []) {
-        if (solve.is_hint) continue;
-        if (!flagById.has(solve.flag_id)) continue;
-        if (!teamStats.has(solve.team_id)) continue;
-
-        const solveTime = toTime(
-          solve.created_at || solve.solved_at || solve.inserted_at
-        );
-
-        const current = firstSolveByFlag.get(solve.flag_id);
-
-        if (!current || isBefore(solveTime, current.solveTime)) {
-          firstSolveByFlag.set(solve.flag_id, {
-            teamId: solve.team_id,
-            solveTime,
-          });
-        }
-      }
-
-      for (const firstSolve of firstSolveByFlag.values()) {
-        const team = teamStats.get(firstSolve.teamId);
-
-        if (team) {
-          team.firstBloods += 1;
-        }
-      }
-    }
-
     const leaderboard = Array.from(teamStats.values()).sort((a, b) => {
       if (b.score !== a.score) return b.score - a.score;
       if (b.solved !== a.solved) return b.solved - a.solved;
-      if (b.firstBloods !== a.firstBloods) {
-        return b.firstBloods - a.firstBloods;
-      }
 
-      if (a.lastScoreTime && b.lastScoreTime) {
-        return (
-          new Date(a.lastScoreTime).getTime() -
-          new Date(b.lastScoreTime).getTime()
-        );
-      }
+      // Ranking for ALL rounds:
+      // 1) Higher score
+      // 2) More solved questions
+      // 3) Lower total solve time
+      // 4) Team name
+      const aTotalSolveTime =
+        a.solved > 0 && Number.isFinite(a.totalSolveTimeMs)
+          ? a.totalSolveTimeMs
+          : Number.MAX_SAFE_INTEGER;
 
-      if (a.lastScoreTime && !b.lastScoreTime) return -1;
-      if (!a.lastScoreTime && b.lastScoreTime) return 1;
+      const bTotalSolveTime =
+        b.solved > 0 && Number.isFinite(b.totalSolveTimeMs)
+          ? b.totalSolveTimeMs
+          : Number.MAX_SAFE_INTEGER;
+
+      if (aTotalSolveTime !== bTotalSolveTime) {
+        return aTotalSolveTime - bTotalSolveTime;
+      }
 
       return a.team_name.localeCompare(b.team_name);
     });
